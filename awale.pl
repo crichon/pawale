@@ -37,10 +37,10 @@ launch(_):- write('Savez-vous lire ?').
 diff(X,X):- !, fail.
 diff(_,_).
 
-element(X, [T|Q]):- X = T, !, true.
+element(X, [T|_]):- X = T, !, true.
 element(X, [_|Q]):- element(X, Q).
 
-elements(X, [X|Q]).
+elements(X, [X|_]).
 elements(X, [_|Q]):- element(X, Q).
 
 mooves(_, [], L, L).
@@ -48,6 +48,9 @@ mooves(N, [T|Q], Tmp, R):- NI is N +1, diff(T, 0), mooves(NI, Q, [NI|Tmp], R), !
 mooves(N, [_|Q], Tmp, R):- NI is N + 1, mooves(NI, Q, Tmp, R).
 mooves(L, R):- mooves(0, L, [], R).
 
+concat(L, LL, R):- concat(L, LL, [], R).
+concat(L, LL, Tmp, R):- concat([T|Q], LL, 
+concat([], [], U, U).
 
 % How to detect if the game entered in a cycle
 % implement other victory condition
@@ -55,56 +58,36 @@ is_win(S, Turn):- S >= 25, nl, nl, write(Turn), write(' a gagné. \n Fin de la p
 
 get(L, C, R):- get(1, L, C, R).
 get(I, [_|Q], C, R):- II is I +1, get(II, Q, C, R), !. 
-get(X, [T|Q], X, T).
+get(X, [T|_], X, T).
 
 add_to_list(N, L, NC, R):- add_to_list(N, [], L, NC, R).
 add_to_list(N, L, [T|Q], NC, R):- NN is N -1, N > 0, TT is T + 1, add_to_list(NN, [TT|L], Q, NC, R), !.
 add_to_list(N, L, [T|Q], NC, R):- add_to_list(N, [T|L], Q, NC, R).
 add_to_list(N, T, [], N,T).
 
-%add_from(N, Pos, L, R):- 
+%% to test
+add_from(N, Pos, L, NC, R):- add_from(0, N, Pos, L, [], NC, R).
+add_from(X, N, Pos, [T|Q], L, NC, R):- XI is X + 1, add_from(XI, N, Pos, Q, [T|L], NC, R).
+add_from(Pos, N, Pos, [T|Q], T, NC, R):- add_from(1, _, Pos, N, Pos, Q, [0|T], NC, R). 
+add_from(1, _, N, _, [T|Q], LL, NC, R):- Ncc is NC - 1, TC is T +1, add_form(1, _, Ncc, _, Q, [TC|LL], NC, R).
+add_from(1, _, N, _, [], L, N, L). 
 
+add_froms(N, Pos, L, NC, R):- write('ok'), add_froms(0, N, Pos, L, [], NC, R).
+add_froms(Pos, N, Pos, [T|Q], L, NC, R):- add_to_list(N, Q, NC, RR) , write('fuck'), ! . 
+add_froms(X, N, Pos, [T|Q], L, NC, R):- XI is (X + 1), add_froms(XI, N, Pos, Q, [T|L], NC, R).
+%todo add_skip
 
 % 11 or 12
 %seed(I1, I2, Choice, O1, O2):- get(I1, choice, N), X is round(N / 11) + 1, seed(I1, I2, Choice,  
 %seed(I1, I2, Choice, O1, O2):- get(I1, Choice, N), add_to_list(N, I1, NN, R), write(NN), nl, write( R).
-seed(I1, I2, Choice, O1, O2):- get(I1, Choice, N), 
+seed(I1, I2, Choice, O1, O2):- get(I1, Choice, N), seed(I1, I2, N, Choice, [], [], O1, O2).
+seed(I1, I2, N, Choice, L1, L2, O1, O2):- get(I1, Choice, Test), N = Test, add_from(N, Choice, I1, NN, L1), add_to_list(NN, Choice, I2, NNN, L2), seed([], [], NN, Choice, L1, L2, O1, O2).
+% loop until there is no seed left
+seed([], [], N, Choice, O1, O2, L1, L2):-diff(N,0), seed(O1, O2, N Choice, O1, O2, L1, L2). 
+seed(I1, I2, N, Choice, L1, L2, O1, O2):- diff(N, 0), add_skip(N, Choice, I2, NN, L2), seed([], I2, NN, Choice, L1, L2, O1, O2), !.
+seed([], I2, N, Choice, L1, L2, O1, O2):- diff(N, 0), add_to_list(N, Choice, I2, NN, L2), seed([], [], NN, Choice, L1, L2, O1, O2), !.
+seed([], [], 0, Choice, L1, L2, L1, L2).
 
-%
-
-
-% I -> input, O -> output, 1 calling player, 2 oponement
-% first, get the number of seeds in the selected holes
-%seed(I1, I2, Choice, O1, O2 ):- get(I1, Choice, N), seed(0, 0, Choice, N, I1, I2, [], []).
-
-% copy I1 to O2 until we reach the selected holls
-%seed(0, H, X, N, [T|Q], I2, O1, O2):-  HI is H + 1, diff(HI, X), seed(0, HI, X, N, Q, I2, [T|O1], O2).
-
-% here we reach the selected holl
-%seed(G, H, N, X, [T|Q], I2, O1, O2):- H = X, HI is H +1, seed(1, HI, N, X, Q, I2, [0|O1], O2).
-
-% distribute the seeds in the player field, until there is no seed or we reach end
-%seed(1, H, N, X, [T|Q], I2, O1, O2):- TI is T + 1, HI is H +1, NI is N - 1, diff(NI, 0), seed(1, HI, NI, X, Q, I2, [TI|O1], O2).
-%seed(1, H, 0, X, [T|Q], I2, O1, O2):- HI is H +1, seed(1, HI, 0, X, Q, I2, [T|O1], O2).
-
-%reach the player one field end, ! reverse ?
-%seed(1, H, N, X, [], I2, O1, O2):- seed(1, 0, N, X, [], I2, reverse(O1), O2).
-
-% distribute on the other field
-%seed(1, H, N, X, [], [T|Q], O1, O2):- TI is T + 1, HI is H +1, NI is N - 1, diff(NI, 0), seed(1, HI, NI, X, Q, I2, O1, [TI|O2]).
-%seed(1, H, 0, X, [], [T|Q], O1, O2):- HI is H +1, seed(1, HI, 0, X, Q, I2, O1, [TI|O2]).
-
-
-% if more than 12
-%seed(1, H, N, X, [], [], O1, O2):- NI is N -1, diff(NI, 0), seed(2, 0, NI, X, O1, O2, O1, O2).
-%seed(2, H, N, X, [T|Q], I2, O1, O2):- NI is N -1, HI is H + 1, diff(NI, 0), diff(HI, X), TI is TI +1, seed(2, HI, NI, X, Q, I2, [TI|O1], O2).
-
-% more than 18, fuck that shit
-
-%end condition 
-%seed(2, H, 0, X, _, _, O1, O2).
-%seed(1, H, 0, X, [], [], O1, O2).
-                             
 
 game_loop_pvp(Map1, Map2, Score1, Score2, Turn):- is_win(Score1, 'joueur1'). 
 game_loop_pvp(Map1, Map2, Score1, Score2, Turn):- is_win(Score2, 'joueur2'). 
