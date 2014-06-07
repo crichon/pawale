@@ -1,5 +1,33 @@
 % main.pl
+% ------------------------------------------------------------------------------
+% UI
+% ------------------------------------------------------------------------------
 
+% draw primitive
+draw([T|Q]) :- write(T), tab(4), draw(Q).
+draw([]).
+
+% print the map
+draw_game(P1, P2, S1, S2, Turn):-
+                    write('\n\n'),
+                    write('Joueur 1 |'), tab(2), draw(P1), nl,
+                    reverse(P2, RP2),
+                    write('Joueur 2 |'), tab(2), draw(RP2), nl,
+                    nl, write('Joueur 1:'), tab(2), write(S1), nl,
+                    write('Joueur 2:'), tab(2), write(S2), nl,
+                    write('Tour de: '), write(Turn), nl,
+                    nl, nl, nl.
+
+% print the map
+debug(P1, P2):-
+                    write('\n\n'),
+                    write('-----------------------------DEBUG-------------------------------------------'),
+                    nl,
+                    write('Joueur 1 |'), tab(2), draw(P1), nl,
+                    reverse(P2, RP2),
+                    write('Joueur 2 |'), tab(2), draw(RP2), nl,
+                    write('------------------------------------------------------------------------------'),
+                    nl, nl, nl.
 % ------------------------------------------------------------------------------
 % Utils
 % ------------------------------------------------------------------------------
@@ -14,9 +42,23 @@ concat([], L, L).
 concat([X|L1], L2, [X|L3]):- concat(L1, L2, L3).
 
 moves(L, R):- moves(L, 0, R).
-moves([T|Q], N, [I|R]) :- diff(T, 0), NN is N +1, moves(Q, NN, R), I is NN, ! .   
+moves([T|Q], N, [I|R]) :- diff(T, 0), NN is N +1, moves(Q, NN, R), I is NN, ! .
 moves([_|Q], N, R) :- NN is N +1, moves(Q, NN, R).
-moves([], _, []).   
+moves([], _, []).
+
+split([T|Q], NN, [T|L1], L2):- N is NN - 1, split(Q, N, L1, L2), !.
+split(L, 0, [], L).
+
+% reverse a list
+reverse([], L, L).
+reverse([T|Q], Tmp, Res) :- reverse(Q, [T| Tmp], Res).
+reverse(L, LP) :- reverse(L, [], LP).
+
+% ------------------------------------------------------------------------------
+% Seed -> Distribute the seeds, update the maps and return pf, final position
+% Take -> Take the opponement map, return the updated score and map
+% ------------------------------------------------------------------------------
+
 
 % lack elegance, but well it's working
 seed(Map, C, R, Pf):- seed(1, Map, [], C, R, Pf).
@@ -25,16 +67,25 @@ seed(I, [T|Q], L, C, Rf, Pf):- I = C, II is I +1, seed(II, Q, [0|L], C, T, Rf, P
 % loop
 seed(I, [T|Q], R, C, N, Rf, Pf):- diff(I, C), diff(N, 0), II is I + 1, NN is N - 1, TT is T +1, seed(II, Q, [TT|R], C, NN, Rf, Pf), !.
 seed(I, [_|Q], R, C, N, Rf, Pf):- I = C, diff(N, 0), II is I + 1, seed(II, Q, [0|R], C, N, Rf, Pf), !.
-seed(_, [], R, C, N, Rf, Pf):- reverse(R, RR),nl, seed(1, RR, [], C, N, Rf, Pf), ! .
+seed(_, [], R, C, N, Rf, Pf):- diff(N, 0), reverse(R, RR),nl, seed(1, RR, [], C, N, Rf, Pf), ! .
 %end
 seed(I, L, R, _, 0, X, II):- II is I - 1, reverse(R,RR), concat(RR, L, X), ! .
 
-split([T|Q], NN, [T|L1], L2):- N is NN - 1, split(Q, N, L1, L2), !.
-split(L, 0, [], L).
+update([T|Q], Score, R, [0|M]):- T >= 3, S is Score + T, update(Q, S, R, M), ! .
+update(L, R, R, L).
+
+take(Pf, Map, Score, NS, N_map):- Pf = 0, take(12, map, Score, NS, N_map).
+take(Pf, Map, Score, Ns, N_map):- Pf =< 6, Ns is Score, concat(Map, [], N_map). 
+take(Pf, Map, Score, NS, N_map):- 
+                    write('wtf'), nl,
+                    N is Pf - 6, split(Map, N, Take, Res),
+                    reverse(Take, RTake),
+                    update(RTake, Score, NS, NRTake),
+                    reverse(NRTake, N_tmap2), concat(N_tmap2, Res, N_map) .
 
 
 % ------------------------------------------------------------------------------
-% Main menu 
+% Main menu
 % ------------------------------------------------------------------------------
 
 launch_game:- repeat, main_menu, !.
@@ -52,44 +103,59 @@ launch(1):- write('Nouvelle partie, humain contre humain'),
 
 launch(_):- write('Savez-vous lire ?').
 
+% ------------------------------------------------------------------------------
+% Game loop
+% ------------------------------------------------------------------------------
 
-% ------------------------------------------------------------------------------
-% Game loop 
-% ------------------------------------------------------------------------------
 is_win(S, Turn):- S >= 25, nl, nl, write(Turn), write(' a gagné. \n Fin de la partie \n\n').
 
 % factorize using turn ?
-game_loop_pvp(Map1, Map2, Score1, Score2, Turn):- is_win(Score1, 'joueur1'). 
-game_loop_pvp(Map1, Map2, Score1, Score2, Turn):- is_win(Score2, 'joueur2'). 
+game_loop_pvp(Map1, Map2, Score1, Score2, Turn):- is_win(Score1, 'joueur1').
+game_loop_pvp(Map1, Map2, Score1, Score2, Turn):- is_win(Score2, 'joueur2').
 
 % ajouter conteur de graine prises
-game_loop_pvp(Map1, Map2, Score1, Score2, 'joueur1'):- 
+game_loop_pvp(Map1, Map2, Score1, Score2, 'joueur1'):-
                     draw_game(Map1, Map2, Score1, Score2, 'joueur1'),
-                    
+
                     write('Vous pouvez semer depuis les trous: '),
-                    mooves(Map1, R), write(R),
-                    repeat, nl, read(Choice), element(Choice, R),
-                    write(Choice),
-                    
+                    moves(Map1, R), write(R), nl,
+                    %repeat, nl, read(Choice), element(Choice, R),
+                    %write(Choice),
+                    read(Choice),
+                    write(Choice), nl,
+
                     % redistribute the map and update scores
-                    reverse(Map2, RMap2),
-                    concat(Map1, RMap2, Map).
+                    % to factorize
+                    debug(Map1, Map2),
+                    write('before'),
+                    concat(Map1, Map2, Map),
                     seed(Map, Choice, Nmap, Pf),
-                    split(Nmap, 6, N_map1, RN_map2),
-                    reverse(RN_map2, N_map2),
+                    split(Nmap, 6, N_map1, N_map2),
 
-                    take(Map2, Score, N_map2, N_score1),
-                    game_loop_pvp(N_map1, N_map2, N_score1, Score2, 'joueur2').
+                    debug(N_map1, N_map2),
+                    % take
+                    take(Pf, N_map2, Score1, NS, U_map2),
+
+                    game_loop_pvp(N_map1, U_map2, NS, Score2, 'joueur2').
 
 
-game_loop_pvp(Map1, Map2, Score1, Score2, 'joueur2'):- 
+game_loop_pvp(Map1, Map2, Score1, Score2, 'joueur2'):-
                     draw_game(Map1, Map2, Score1, Score2, 'joueur2'),
 
                     write('Vous pouvez semer depuis les trous: '),
-                    mooves(Map2, R), write(R),
-                    repeat, nl, read(Choice), element(Choice, R),
-                    write(Choice),
-                    
+                    moves(Map2, R), write(R), nl,
+                    %repeat, nl, read(Choice), element(Choice, R),
+                    read(Choice),
+                    write(Choice), nl,
+
+                    % redistribute the map and update scores
+                    % to factorize
+                    concat(Map2, Map1, Map),
                     seed(Map, Choice, Nmap, Pf),
-                    split(Nmap, 6, N_map1, N_map2),
-                    game_loop_pvp(N_map1, N_map2, Score1, N_score2, 'joueur2').
+                    split(Nmap, 6, N_map2, N_map1),
+
+                    debug(N_map1, N_map2),
+                    % take
+                    take(Pf, N_map1, Score2, NS, U_map1),
+
+                    game_loop_pvp(U_map1, N_map2, Score1, NS, 'joueur1').
