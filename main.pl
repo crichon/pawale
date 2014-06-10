@@ -10,9 +10,9 @@ draw([]).
 % print the map
 draw_game(P1, P2, S1, S2, Turn):-
                     write('\n\n'),
-                    write('Joueur 1 |'), tab(2), draw(P1), nl,
                     reverse(P2, RP2),
                     write('Joueur 2 |'), tab(2), draw(RP2), nl,
+                    write('Joueur 1 |'), tab(2), draw(P1), nl,
                     nl, write('Joueur 1:'), tab(2), write(S1), nl,
                     write('Joueur 2:'), tab(2), write(S2), nl,
                     write('Tour de: '), write(Turn), nl,
@@ -54,11 +54,14 @@ reverse([], L, L).
 reverse([T|Q], Tmp, Res) :- reverse(Q, [T| Tmp], Res).
 reverse(L, LP) :- reverse(L, [], LP).
 
+check_moves(Map, Choice) :- repeat, check(Map, Choice), !.
+
+check(Map, Choice):- nl, read(Choice), element(Choice, Map).
+                    %repeat, nl, read(Choice), element(Choice, R),
+
 % ------------------------------------------------------------------------------
 % Seed -> Distribute the seeds, update the maps and return pf, final position
-% Take -> Take the opponement map, return the updated score and map
 % ------------------------------------------------------------------------------
-
 
 % lack elegance, but well it's working
 seed(Map, C, R, Pf):- seed(1, Map, [], C, R, Pf).
@@ -71,12 +74,16 @@ seed(_, [], R, C, N, Rf, Pf):- diff(N, 0), reverse(R, RR),nl, seed(1, RR, [], C,
 %end
 seed(I, L, R, _, 0, X, II):- II is I - 1, reverse(R,RR), concat(RR, L, X), ! .
 
-update([T|Q], Score, R, [0|M]):- T >= 3, S is Score + T, update(Q, S, R, M), ! .
+% ------------------------------------------------------------------------------
+% Take (Prise)
+% ------------------------------------------------------------------------------
+
+update([T|Q], Score, R, [0|M]):- T =< 3, T >= 2, S is Score + T, update(Q, S, R, M), ! .
 update(L, R, R, L).
 
 take(Pf, Map, Score, NS, N_map):- Pf = 0, take(12, map, Score, NS, N_map).
-take(Pf, Map, Score, Ns, N_map):- Pf =< 6, Ns is Score, concat(Map, [], N_map). 
-take(Pf, Map, Score, NS, N_map):- 
+take(Pf, Map, Score, Ns, N_map):- Pf =< 6, Ns is Score, concat(Map, [], N_map).
+take(Pf, Map, Score, NS, N_map):-
                     write('wtf'), nl,
                     N is Pf - 6, split(Map, N, Take, Res),
                     reverse(Take, RTake),
@@ -119,9 +126,7 @@ game_loop_pvp(Map1, Map2, Score1, Score2, 'joueur1'):-
 
                     write('Vous pouvez semer depuis les trous: '),
                     moves(Map1, R), write(R), nl,
-                    %repeat, nl, read(Choice), element(Choice, R),
-                    %write(Choice),
-                    read(Choice),
+                    check_moves(R, Choice),
                     write(Choice), nl,
 
                     % redistribute the map and update scores
@@ -144,8 +149,7 @@ game_loop_pvp(Map1, Map2, Score1, Score2, 'joueur2'):-
 
                     write('Vous pouvez semer depuis les trous: '),
                     moves(Map2, R), write(R), nl,
-                    %repeat, nl, read(Choice), element(Choice, R),
-                    read(Choice),
+                    check_moves(R, Choice),
                     write(Choice), nl,
 
                     % redistribute the map and update scores
