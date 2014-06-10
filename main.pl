@@ -23,9 +23,9 @@ debug(P1, P2):-
                     write('\n\n'),
                     write('-----------------------------DEBUG-------------------------------------------'),
                     nl,
-                    write('Joueur 1 |'), tab(2), draw(P1), nl,
                     reverse(P2, RP2),
                     write('Joueur 2 |'), tab(2), draw(RP2), nl,
+                    write('Joueur 1 |'), tab(2), draw(P1), nl,
                     write('------------------------------------------------------------------------------'),
                     nl, nl, nl.
 % ------------------------------------------------------------------------------
@@ -113,6 +113,10 @@ launch(_):- write('Savez-vous lire ?').
 % ------------------------------------------------------------------------------
 % Game loop
 % ------------------------------------------------------------------------------
+launch_seed(Map1, Map2, Choice, Nmap1, Nmap2, Pf):-
+                    concat(Map1, Map2, Map),
+                    seed(Map, Choice, Nmap, Pf),
+                    split(Nmap, 6, Nmap1, Nmap2).
 
 is_win(S, Turn):- S >= 25, nl, nl, write(Turn), write(' a gagné. \n Fin de la partie \n\n').
 
@@ -131,11 +135,9 @@ game_loop_pvp(Map1, Map2, Score1, Score2, 'joueur1'):-
 
                     % redistribute the map and update scores
                     % to factorize
-                    debug(Map1, Map2),
+                    %debug(Map1, Map2),
+                    launch_seed(Map1, Map2, Choice, N_map1, N_map2, Pf),
                     write('before'),
-                    concat(Map1, Map2, Map),
-                    seed(Map, Choice, Nmap, Pf),
-                    split(Nmap, 6, N_map1, N_map2),
 
                     debug(N_map1, N_map2),
                     % take
@@ -154,9 +156,10 @@ game_loop_pvp(Map1, Map2, Score1, Score2, 'joueur2'):-
 
                     % redistribute the map and update scores
                     % to factorize
-                    concat(Map2, Map1, Map),
-                    seed(Map, Choice, Nmap, Pf),
-                    split(Nmap, 6, N_map2, N_map1),
+                    launch_seed(Map2, Map1, Choice, N_map2, N_map1, Pf),
+                    %concat(Map2, Map1, Map),
+                    %seed(Map, Choice, Nmap, Pf),
+                    %split(Nmap, 6, N_map2, N_map1),
 
                     debug(N_map1, N_map2),
                     % take
