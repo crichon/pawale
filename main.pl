@@ -1,4 +1,5 @@
 % main.pl
+% convention map 1 is the playing player, map2 is for the opponement
 % ------------------------------------------------------------------------------
 % UI
 % ------------------------------------------------------------------------------
@@ -29,7 +30,7 @@ debug(P1, P2):-
                     write('------------------------------------------------------------------------------'),
                     nl, nl, nl.
 % ------------------------------------------------------------------------------
-% Utils
+% Primitive
 % ------------------------------------------------------------------------------
 
 no(P):- P, ! , fail.
@@ -44,13 +45,27 @@ element(X, [_|Q]):- element(X, Q).
 concat([], L, L).
 concat([X|L1], L2, [X|L3]):- concat(L1, L2, L3).
 
+split([T|Q], NN, [T|L1], L2):- N is NN - 1, split(Q, N, L1, L2), !.
+split(L, 0, [], L).
+
+% reverse a list
+reverse([], L, L).
+reverse([T|Q], Tmp, Res) :- reverse(Q, [T| Tmp], Res).
+reverse(L, LP) :- reverse(L, [], LP).
+
+sum([], 0).
+sum([T|Q], S):- sum(Q, Res), S is Res + T.
+% ------------------------------------------------------------------------------
+% Utils
+% ------------------------------------------------------------------------------
+
 moves(L, R):- moves(L, 0, R).
 moves([T|Q], N, [I|R]) :- diff(T, 0), NN is N +1, moves(Q, NN, R), I is NN, ! .
 moves([_|Q], N, R) :- NN is N +1, moves(Q, NN, R).
 moves([], _, []).
 
 % take maps, if all opponement fields are null, check in the allowed moves (L) if we can feed him
-check_moves_f_null(Map1, Map2, L, R):- diff(Map2, [O,O,O,O,O,O]), !, concat([], L, R).
+check_moves_f_null(_, Map2, L, R):- diff(Map2, [O,O,O,O,O,O]), !, concat([], L, R).
 
 check_moves_f_null(Map1, Map2, [T|Q], [T|R]):-
     no(launch_seed(Map1, Map2, T, _, [0, 0, 0, 0, 0, 0], _)),
@@ -60,13 +75,6 @@ check_moves_f_null(Map1, Map2, [_|Q], R):- check_moves_f_null(Map1, Map2, Q, R),
 
 check_moves_f_null(_, _, [], []).
 
-split([T|Q], NN, [T|L1], L2):- N is NN - 1, split(Q, N, L1, L2), !.
-split(L, 0, [], L).
-
-% reverse a list
-reverse([], L, L).
-reverse([T|Q], Tmp, Res) :- reverse(Q, [T| Tmp], Res).
-reverse(L, LP) :- reverse(L, [], LP).
 
 check_moves(Map, Choice) :- repeat, check(Map, Choice), !.
 
@@ -143,11 +151,35 @@ launch_seed(Map1, Map2, Choice, Nmap1, Nmap2, Pf):-
 
 is_win(S, Turn):- S >= 25, nl, nl, write(Turn), write(' a gagné. \n Fin de la partie \n\n').
 
-% factorize using turn ?
-game_loop_pvp(Map1, Map2, Score1, Score2, Turn):- is_win(Score1, 'joueur1').
-game_loop_pvp(Map1, Map2, Score1, Score2, Turn):- is_win(Score2, 'joueur2').
+% to factorize
+% current player can't play, the game ends, player 2 get all his seeds
+is_finnish([0,0,0,0,0,0], Map2, Score1, Score2):- write('fuck'),
+    sum(Map2, S), write('fuck'), NS is Score2 + S, write('fuck'),Score1 > NS,
+    nl, write('La partie est finie, vous ne pouvez plus jouer, votre adversaire ramasse ses graines.'), nl,
+    write('         '), write('Vous avez gangné, avec '), write(Score1), write(' contre '), write(NS), !.
 
-% ajouter conteur de graine prises
+is_finnish([0,0,0,0,0,0], Map2, Score1, Score2):-
+    sum(Map2, S), NS is Score2 + S, Score1 < NS,
+    nl, write('La partie est finie, vous ne pouvez plus jouer, votre adversaire ramasse ses graines.'), nl,
+    write('         '), write('Vous avez perdu, avec '), write(Score1), write(' contre '), write(NS), !.
+
+is_finnish([0,0,0,0,0,0], Map2, Score1, Score2):-
+    sum(Map2, S), NS is Score2 + S, Score1 = NS,
+    nl, write('La partie est finie, vous ne pouvez plus jouer, votre adversaire ramasse ses graines.'), nl,
+    write('         '), write('Egalite o0 '), write(Score1), write(' à '), write(NS), !.
+
+% factorize using turn ?
+game_loop_pvp(Map1, Map2, Score1, Score2, Turn):-
+    Turn = 'joueur1',
+    is_win(Score2, 'joueur2'), % plyer 2 just played, check if he has win
+    is_finnish(Map1, Map2, Score1, Score2). % check if i can play
+
+game_loop_pvp(Map1, Map2, Score1, Score2, Turn):-
+    Turn = 'joueur2',
+    is_win(Score1, 'joueur1'),
+    is_end(Map2, Map1, Score2, Score1).
+
+% factoriser en inversant les listes ?
 game_loop_pvp(Map1, Map2, Score1, Score2, 'joueur1'):-
                     draw_game(Map1, Map2, Score1, Score2, 'joueur1'),
 
