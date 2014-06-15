@@ -14,7 +14,8 @@ draw([]).
 % print the map
 draw_game(P1, P2, S1, S2, Turn):-
                     write('\n\n'),
-                    reverse(P2, RP2),
+                    write('-----------------------------Nouveau tour-------------------------------------------'),
+                    nl, reverse(P2, RP2),
                     write('Joueur 2 |'), tab(2), draw(RP2), nl,
                     write('Joueur 1 |'), tab(2), draw(P1), nl,
                     nl, write('Joueur 1:'), tab(2), write(S1), nl,
@@ -184,13 +185,38 @@ launch(_):- write('Savez-vous lire ?').
 % ------------------------------------------------------------------------------
 %get_moves(Map1, R, M):-
 
-play(Map1, Map2, Score1, NS, N_map1, U_map2, Pf):-
+play(Map1, Map2, Score1, NS, N_map1, U_map2, Pf, Choice):-
                     moves(Map1, R), check_moves_f_null(Map1, Map2, R, M),
                     element(Choice, M),
                     launch_seed(Map1, Map2, Choice, N_map1, N_map2, Pf),
                     take(Pf, N_map2, Score1, NS, U_map2).
 
-%bagof([NS, N_map1, U_map2, Pf],play([1,7,0,3,1,6], [0, 0, 0, 0, 0, 0], 3, NS, N_map1, U_map2, Pf), Z).
+
+% check if we can reach 25 point or if we can empty the opponement field and win
+%can_win(Z):-
+    %write('no').
+
+% tmp is 0 when launched
+best_play([(Score, _, M2, _, Choice)| _], Score2, Play, Tmp, ES):-
+    M2 = [0, 0, 0, 0, 0, 0], Score > Score2, Tmp is Score,
+    write('Vous pouvez gagné en jouant'), write(Choice), nl,
+    Play is Choice, ! .
+
+best_play([(Score, _, _, _, Choice)| _], _, Play, Tmp, ES):-
+    Score > 25, Tmp is Score,
+    write('Vous pouvez gagné en jouant'), write(Choice), nl,
+    Play is Choice, ! .
+
+best_play([(Score, _, _, _, Choice)| Q], Score2, _, Tmp, ES):-
+    Score > Tmp, Ttmp is Score, NPlay is Choice,
+    best_play(Q, Score2, NPlay, Ttmp, ES), !.
+
+best_play([_| Q], Score2, Play, Tmp, ES):-
+    best_play(Q, Score2, Play, Tmp, ES), !.
+
+best_play([], _, Play, ES, ES):- Play is 42.
+
+    %bagof([NS, N_map1, U_map2, Pf],play([1,7,0,3,1,6], [0, 0, 0, 0, 0, 0], 3, NS, N_map1, U_map2, Pf), Z).
 
 % factorize using turn ?
 game_loop_pvp(Map1, Map2, Score1, Score2, Turn, [T|Q]):-
@@ -199,6 +225,7 @@ game_loop_pvp(Map1, Map2, Score1, Score2, Turn, [T|Q]):-
     is_finnish(Map1, Map2, Score1, Score2, Turn), % check if i can play
     % determine if the game is cycling, each node is composed of the (map(1->12), pf) 
     is_cycle(T, Q, Score1, Score2, Turn).
+
 
 game_loop_pvp(Map1, Map2, Score1, Score2, Turn, [T|Q]):-
     Turn = 'joueur2',
@@ -214,6 +241,10 @@ game_loop_pvp(Map1, Map2, Score1, Score2, 'joueur1', G):-
                     write('Vous pouvez semer depuis les trous: '),
                     moves(Map1, R), check_moves_f_null(Map1, Map2, R, M),
                     write(M), nl,
+                    bagof([NS, N_map1, U_map2, Pf, Choice], play(Map1, Map2, Score2, NS, N_map1, U_map2, Pf, Choice), Z),
+                    write(Z),
+                    nl, best_play(Z, Score2, Play, 0, ES), nl,
+                    write('Maximum de gains par le coup:'), write(Play), write(' Score: '), write(ES), nl,
                     check_moves(M, Choice),
                     write(Choice), nl,
 
@@ -237,6 +268,9 @@ game_loop_pvp(Map1, Map2, Score1, Score2, 'joueur2', G):-
                     write('Vous pouvez semer depuis les trous: '),
                     moves(Map2, R), check_moves_f_null(Map2, Map1, R, M),
                     write(M), nl,
+                    bagof([NS, U_map1, N_map2, Pf, Choice], play(Map2, Map1, Score1, NS, U_map1, N_map2, Pf, Choice), Z),
+                    nl, best_play(Z, Score1, Play, 0, ES), nl,
+                    write('Maximum de gains par le coup:'), write(Play), write(ES), nl,
                     check_moves(M, Choice),
                     write(Choice), nl,
 
