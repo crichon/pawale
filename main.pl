@@ -64,9 +64,27 @@ sum([T|Q], S):- sum(Q, Res), S is Res + T.
 
 
 % ------------------------------------------------------------------------------
-% Utils
+% Victory conditions
 % ------------------------------------------------------------------------------
 
+is_win(S, Turn):- S >= 25, nl, nl, write(Turn), write(' a gagné. \n Fin de la partie \n\n').
+
+% to factorize
+% current player can't play, the game ends, player 2 get all his seeds
+is_finnish([0,0,0,0,0,0], Map2, Score1, Score2, Turn):- write('Vous ne pouvez plus jouer, votre adversaire récupere ses graines.'),
+    sum(Map2, S), NS is Score2 + S, winner(Score1, NS, Turn). 
+
+winner(S1, S2, Turn):- S1 > S2, write(Turn), write(' a gagné, '), write(S1), write(' à '), write(S2), !. 
+winner(S1, S2, _):- S1 = S2, write(' égalité, '), write(S1), write(' à '), write(S2). 
+winner(S1, S2, Turn):- S1 < S2, write(Turn), write(' a perdu, '), write(S1), write(' à '), write(S2), !.
+
+is_cycle(T, Q, Score1, Score2, Turn):- element(T, Q), %game end
+    write('Le jeu boucle, fin de la partie'), winner(Score1, Score2, Turn).
+
+
+% ------------------------------------------------------------------------------
+% Utils
+% ------------------------------------------------------------------------------
 
 
 moves(L, R):- moves(L, 0, R).
@@ -164,19 +182,15 @@ launch(_):- write('Savez-vous lire ?').
 % ------------------------------------------------------------------------------
 % Game loop
 % ------------------------------------------------------------------------------
-is_win(S, Turn):- S >= 25, nl, nl, write(Turn), write(' a gagné. \n Fin de la partie \n\n').
+%get_moves(Map1, R, M):-
 
-% to factorize
-% current player can't play, the game ends, player 2 get all his seeds
-is_finnish([0,0,0,0,0,0], Map2, Score1, Score2, Turn):- write('Vous ne pouvez plus jouer, votre adversaire récupere ses graines.'),
-    sum(Map2, S), NS is Score2 + S, winner(Score1, NS, Turn). 
+play(Map1, Map2, Score1, NS, N_map1, U_map2, Pf):-
+                    moves(Map1, R), check_moves_f_null(Map1, Map2, R, M),
+                    element(Choice, M),
+                    launch_seed(Map1, Map2, Choice, N_map1, N_map2, Pf),
+                    take(Pf, N_map2, Score1, NS, U_map2).
 
-winner(S1, S2, Turn):- S1 > S2, write(Turn), write(' a gagné, '), write(S1), write(' à '), write(S2), !. 
-winner(S1, S2, _):- S1 = S2, write(' égalité, '), write(S1), write(' à '), write(S2). 
-winner(S1, S2, Turn):- S1 < S2, write(Turn), write(' a perdu, '), write(S1), write(' à '), write(S2), !.
-
-is_cycle(T, Q, Score1, Score2, Turn):- element(T, Q), %game end
-    write('Le jeu boucle, fin de la partie'), winner(Score1, Score2, Turn).
+%bagof([NS, N_map1, U_map2, Pf],play([1,7,0,3,1,6], [0, 0, 0, 0, 0, 0], 3, NS, N_map1, U_map2, Pf), Z).
 
 % factorize using turn ?
 game_loop_pvp(Map1, Map2, Score1, Score2, Turn, [T|Q]):-
@@ -191,6 +205,7 @@ game_loop_pvp(Map1, Map2, Score1, Score2, Turn, [T|Q]):-
     is_win(Score1, 'joueur1'),
     is_end(Map2, Map1, Score2, Score1, Turn),
     is_cycle(T, Q, Score2, Score1, Turn). 
+
 
 % factoriser en inversant les listes ?
 game_loop_pvp(Map1, Map2, Score1, Score2, 'joueur1', G):-
