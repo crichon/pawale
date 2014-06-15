@@ -1,8 +1,11 @@
 % main.pl
 % convention map 1 is the playing player, map2 is for the opponement
+% same goes on for score1 and score2
+
 % ------------------------------------------------------------------------------
 % UI
 % ------------------------------------------------------------------------------
+
 
 % draw primitive
 draw([T|Q]) :- write(T), tab(4), draw(Q).
@@ -29,9 +32,12 @@ debug(P1, P2):-
                     write('Joueur 1 |'), tab(2), draw(P1), nl,
                     write('------------------------------------------------------------------------------'),
                     nl, nl, nl.
+
+
 % ------------------------------------------------------------------------------
 % Primitive
 % ------------------------------------------------------------------------------
+
 
 no(P):- P, ! , fail.
 no(_).
@@ -55,9 +61,13 @@ reverse(L, LP) :- reverse(L, [], LP).
 
 sum([], 0).
 sum([T|Q], S):- sum(Q, Res), S is Res + T.
+
+
 % ------------------------------------------------------------------------------
 % Utils
 % ------------------------------------------------------------------------------
+
+
 
 moves(L, R):- moves(L, 0, R).
 moves([T|Q], N, [I|R]) :- diff(T, 0), NN is N +1, moves(Q, NN, R), I is NN, ! .
@@ -85,6 +95,12 @@ check(Map, Choice):- nl, read(Choice), element(Choice, Map).
 % Seed -> Distribute the seeds, update the maps and return pf, final position
 % ------------------------------------------------------------------------------
 
+launch_seed(Map1, Map2, Choice, Nmap1, Nmap2, Pf):-
+                    concat(Map1, Map2, Map),
+                    seed(Map, Choice, Nmap, Pf),
+                    split(Nmap, 6, Nmap1, Nmap2).
+
+
 % lack elegance, but well it's working
 seed(Map, C, R, Pf):- seed(1, Map, [], C, R, Pf).
 seed(I, [T|Q], L, C, Rf, Pf):- diff(I, C), II is I +1, seed(II, Q, [T|L], C, Rf, Pf), !.
@@ -96,9 +112,11 @@ seed(_, [], R, C, N, Rf, Pf):- diff(N, 0), reverse(R, RR),nl, seed(1, RR, [], C,
 %end
 seed(I, L, R, _, 0, X, II):- II is I - 1, reverse(R,RR), concat(RR, L, X), ! .
 
+
 % ------------------------------------------------------------------------------
 % Take (Prise)
 % ------------------------------------------------------------------------------
+
 
 update([T|Q], Score, R, [0|M]):- T =< 3, T >= 2, S is Score + T, update(Q, S, R, M), ! .
 update(L, R, R, L).
@@ -122,9 +140,11 @@ take(Pf, Map, Score, NS, N_map):-
                     NS is Score ,
                     write('Champs adverses vidés, vous ne gagnez pas de points'), nl.
 
+
 % ------------------------------------------------------------------------------
 % Main menu
 % ------------------------------------------------------------------------------
+
 
 launch_game:- repeat, main_menu, !.
 
@@ -136,7 +156,7 @@ main_menu:- write('1. Joueur contre joueur'), nl,
 
 launch(0):- write('Au revoir'), ! .
 launch(1):- write('Nouvelle partie, humain contre humain'),
-            nl, game_loop_pvp([4, 4, 4, 4, 4, 4], [4, 4, 4, 4, 4, 4], 0, 0, 'joueur1'),
+            nl, game_loop_pvp([4, 4, 4, 4, 4, 4], [4, 4, 4, 4, 4, 4], 0, 0, 'joueur1', []),
             nl, !.
 
 launch(_):- write('Savez-vous lire ?').
@@ -144,43 +164,36 @@ launch(_):- write('Savez-vous lire ?').
 % ------------------------------------------------------------------------------
 % Game loop
 % ------------------------------------------------------------------------------
-launch_seed(Map1, Map2, Choice, Nmap1, Nmap2, Pf):-
-                    concat(Map1, Map2, Map),
-                    seed(Map, Choice, Nmap, Pf),
-                    split(Nmap, 6, Nmap1, Nmap2).
-
 is_win(S, Turn):- S >= 25, nl, nl, write(Turn), write(' a gagné. \n Fin de la partie \n\n').
 
 % to factorize
 % current player can't play, the game ends, player 2 get all his seeds
-is_finnish([0,0,0,0,0,0], Map2, Score1, Score2):- write('fuck'),
-    sum(Map2, S), write('fuck'), NS is Score2 + S, write('fuck'),Score1 > NS,
-    nl, write('La partie est finie, vous ne pouvez plus jouer, votre adversaire ramasse ses graines.'), nl,
-    write('         '), write('Vous avez gangné, avec '), write(Score1), write(' contre '), write(NS), !.
+is_finnish([0,0,0,0,0,0], Map2, Score1, Score2, Turn):- write('Vous ne pouvez plus jouer, votre adversaire récupere ses graines.'),
+    sum(Map2, S), NS is Score2 + S, winner(Score1, NS, Turn). 
 
-is_finnish([0,0,0,0,0,0], Map2, Score1, Score2):-
-    sum(Map2, S), NS is Score2 + S, Score1 < NS,
-    nl, write('La partie est finie, vous ne pouvez plus jouer, votre adversaire ramasse ses graines.'), nl,
-    write('         '), write('Vous avez perdu, avec '), write(Score1), write(' contre '), write(NS), !.
+winner(S1, S2, Turn):- S1 > S2, write(Turn), write(' a gagné, '), write(S1), write(' à '), write(S2), !. 
+winner(S1, S2, _):- S1 = S2, write(' égalité, '), write(S1), write(' à '), write(S2). 
+winner(S1, S2, Turn):- S1 < S2, write(Turn), write(' a perdu, '), write(S1), write(' à '), write(S2), !.
 
-is_finnish([0,0,0,0,0,0], Map2, Score1, Score2):-
-    sum(Map2, S), NS is Score2 + S, Score1 = NS,
-    nl, write('La partie est finie, vous ne pouvez plus jouer, votre adversaire ramasse ses graines.'), nl,
-    write('         '), write('Egalite o0 '), write(Score1), write(' à '), write(NS), !.
+is_cycle(T, Q, Score1, Score2, Turn):- element(T, Q), %game end
+    write('Le jeu boucle, fin de la partie'), winner(Score1, Score2, Turn).
 
 % factorize using turn ?
-game_loop_pvp(Map1, Map2, Score1, Score2, Turn):-
+game_loop_pvp(Map1, Map2, Score1, Score2, Turn, [T|Q]):-
     Turn = 'joueur1',
     is_win(Score2, 'joueur2'), % plyer 2 just played, check if he has win
-    is_finnish(Map1, Map2, Score1, Score2). % check if i can play
+    is_finnish(Map1, Map2, Score1, Score2, Turn), % check if i can play
+    % determine if the game is cycling, each node is composed of the (map(1->12), pf) 
+    is_cycle(T, Q, Score1, Score2, Turn).
 
-game_loop_pvp(Map1, Map2, Score1, Score2, Turn):-
+game_loop_pvp(Map1, Map2, Score1, Score2, Turn, [T|Q]):-
     Turn = 'joueur2',
     is_win(Score1, 'joueur1'),
-    is_end(Map2, Map1, Score2, Score1).
+    is_end(Map2, Map1, Score2, Score1, Turn),
+    is_cycle(T, Q, Score2, Score1, Turn). 
 
 % factoriser en inversant les listes ?
-game_loop_pvp(Map1, Map2, Score1, Score2, 'joueur1'):-
+game_loop_pvp(Map1, Map2, Score1, Score2, 'joueur1', G):-
                     draw_game(Map1, Map2, Score1, Score2, 'joueur1'),
 
                     write('Vous pouvez semer depuis les trous: '),
@@ -198,11 +211,12 @@ game_loop_pvp(Map1, Map2, Score1, Score2, 'joueur1'):-
                     debug(N_map1, N_map2),
                     % take
                     take(Pf, N_map2, Score1, NS, U_map2),
+                    concat(N_map1, U_map2, GMap),
+                    concat(G, [(GMap, Pf)], GG),
+                    game_loop_pvp(N_map1, U_map2, NS, Score2, 'joueur2', GG).
 
-                    game_loop_pvp(N_map1, U_map2, NS, Score2, 'joueur2').
 
-
-game_loop_pvp(Map1, Map2, Score1, Score2, 'joueur2'):-
+game_loop_pvp(Map1, Map2, Score1, Score2, 'joueur2', G):-
                     draw_game(Map1, Map2, Score1, Score2, 'joueur2'),
 
                     write('Vous pouvez semer depuis les trous: '),
@@ -222,4 +236,7 @@ game_loop_pvp(Map1, Map2, Score1, Score2, 'joueur2'):-
                     % take
                     take(Pf, N_map1, Score2, NS, U_map1),
 
-                    game_loop_pvp(U_map1, N_map2, Score1, NS, 'joueur1').
+                    concat(U_map1, N_map2, GMap),
+                    concat(G, [(GMap, Pf)], GG),
+
+                    game_loop_pvp(U_map1, N_map2, Score1, NS, 'joueur1', GG).
