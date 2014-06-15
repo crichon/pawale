@@ -45,7 +45,7 @@ no(_).
 diff(X,X):- !, fail.
 diff(_,_).
 
-element(X, [T|_]):- X = T, !, true.
+element(X, [T|_]):- X = T, true.
 element(X, [_|Q]):- element(X, Q).
 
 concat([], L, L).
