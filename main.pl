@@ -32,6 +32,9 @@ debug(P1, P2):-
 % Utils
 % ------------------------------------------------------------------------------
 
+no(P):- P, ! , fail.
+no(_).
+
 diff(X,X):- !, fail.
 diff(_,_).
 
@@ -45,6 +48,17 @@ moves(L, R):- moves(L, 0, R).
 moves([T|Q], N, [I|R]) :- diff(T, 0), NN is N +1, moves(Q, NN, R), I is NN, ! .
 moves([_|Q], N, R) :- NN is N +1, moves(Q, NN, R).
 moves([], _, []).
+
+% take maps, if all opponement fields are null, check in the allowed moves (L) if we can feed him
+check_moves_f_null(Map1, Map2, L, R):- diff(Map2, [O,O,O,O,O,O]), !, concat([], L, R).
+
+check_moves_f_null(Map1, Map2, [T|Q], [T|R]):-
+    no(launch_seed(Map1, Map2, T, _, [0, 0, 0, 0, 0, 0], _)),
+    check_moves_f_null(Map1, Map2, Q, R), ! .
+
+check_moves_f_null(Map1, Map2, [_|Q], R):- check_moves_f_null(Map1, Map2, Q, R), !.
+
+check_moves_f_null(_, _, [], []).
 
 split([T|Q], NN, [T|L1], L2):- N is NN - 1, split(Q, N, L1, L2), !.
 split(L, 0, [], L).
@@ -95,7 +109,7 @@ take(Pf, Map, Score, NS, N_map):-
 take(Pf, Map, Score, NS, N_map):-
                     N is Pf - 6, split(Map, N, Take, Res),
                     reverse(Take, RTake),
-                    update(RTake, Score, NSS, NRTake),
+                    update(RTake, Score, _, NRTake),
                     reverse(NRTake, N_tmap2), concat(N_tmap2, Res, N_map),
                     NS is Score ,
                     write('Champs adverses vidés, vous ne gagnez pas de points'), nl.
@@ -138,8 +152,9 @@ game_loop_pvp(Map1, Map2, Score1, Score2, 'joueur1'):-
                     draw_game(Map1, Map2, Score1, Score2, 'joueur1'),
 
                     write('Vous pouvez semer depuis les trous: '),
-                    moves(Map1, R), write(R), nl,
-                    check_moves(R, Choice),
+                    moves(Map1, R), check_moves_f_null(Map1, Map2, R, M),
+                    write(M), nl,
+                    check_moves(M, Choice),
                     write(Choice), nl,
 
                     % redistribute the map and update scores
@@ -159,8 +174,9 @@ game_loop_pvp(Map1, Map2, Score1, Score2, 'joueur2'):-
                     draw_game(Map1, Map2, Score1, Score2, 'joueur2'),
 
                     write('Vous pouvez semer depuis les trous: '),
-                    moves(Map2, R), write(R), nl,
-                    check_moves(R, Choice),
+                    moves(Map2, R), check_moves_f_null(Map2, Map1, R, M),
+                    write(M), nl,
+                    check_moves(M, Choice),
                     write(Choice), nl,
 
                     % redistribute the map and update scores
