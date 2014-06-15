@@ -81,15 +81,24 @@ seed(I, L, R, _, 0, X, II):- II is I - 1, reverse(R,RR), concat(RR, L, X), ! .
 update([T|Q], Score, R, [0|M]):- T =< 3, T >= 2, S is Score + T, update(Q, S, R, M), ! .
 update(L, R, R, L).
 
-take(Pf, Map, Score, NS, N_map):- Pf = 0, take(12, map, Score, NS, N_map).
-take(Pf, Map, Score, Ns, N_map):- Pf =< 6, Ns is Score, concat(Map, [], N_map).
+take(Pf, Map, Score, NS, N_map):- Pf = 0, take(12, Map, Score, NS, N_map), !.
+take(Pf, Map, Score, Ns, N_map):- Pf =< 6, Ns is Score, concat(Map, [], N_map), !.
 take(Pf, Map, Score, NS, N_map):-
-                    write('wtf'), nl,
+                    %write('wtf'), nl,
                     N is Pf - 6, split(Map, N, Take, Res),
                     reverse(Take, RTake),
                     update(RTake, Score, NS, NRTake),
-                    reverse(NRTake, N_tmap2), concat(N_tmap2, Res, N_map) .
+                    reverse(NRTake, N_tmap2), concat(N_tmap2, Res, N_map),
+                    % check if the new map is not null
+                    diff(N_map, [0,0,0,0,0,0]), !.
 
+take(Pf, Map, Score, NS, N_map):-
+                    N is Pf - 6, split(Map, N, Take, Res),
+                    reverse(Take, RTake),
+                    update(RTake, Score, NSS, NRTake),
+                    reverse(NRTake, N_tmap2), concat(N_tmap2, Res, N_map),
+                    NS is Score ,
+                    write('Champs adverses vidés, vous ne gagnez pas de points'), nl.
 
 % ------------------------------------------------------------------------------
 % Main menu
