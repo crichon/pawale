@@ -197,13 +197,13 @@ play(Map1, Map2, Score1, NS, N_map1, U_map2, Pf, Choice):-
     %write('no').
 
 % tmp is 0 when launched
-best_play([(Score, _, M2, _, Choice)| _], Score2, Play, Tmp, ES):-
-    M2 = [0, 0, 0, 0, 0, 0], Score > Score2, Tmp is Score,
+best_play([(Score, _, M2, _, Choice)| _], Score2, Play, _, ES):-
+    M2 = [0, 0, 0, 0, 0, 0], Score > Score2, ES is Score,
     write('Vous pouvez gagné en jouant'), write(Choice), nl,
     Play is Choice, ! .
 
-best_play([(Score, _, _, _, Choice)| _], _, Play, Tmp, ES):-
-    Score > 25, Tmp is Score,
+best_play([(Score, _, _, _, Choice)| _], _, Play, _, ES):-
+    Score > 25, ES is Score,
     write('Vous pouvez gagné en jouant'), write(Choice), nl,
     Play is Choice, ! .
 
@@ -214,7 +214,7 @@ best_play([(Score, _, _, _, Choice)| Q], Score2, _, Tmp, ES):-
 best_play([_| Q], Score2, Play, Tmp, ES):-
     best_play(Q, Score2, Play, Tmp, ES), !.
 
-best_play([], _, Play, ES, ES):- Play is 42.
+best_play([], _, Play, ES, ES):- write('Coups aléatoire'), nl, Play is random(6) + 1.
 
     %bagof([NS, N_map1, U_map2, Pf],play([1,7,0,3,1,6], [0, 0, 0, 0, 0, 0], 3, NS, N_map1, U_map2, Pf), Z).
 
@@ -243,7 +243,7 @@ game_loop_pvp(Map1, Map2, Score1, Score2, 'joueur1', G):-
                     write(M), nl,
                     bagof([NS, N_map1, U_map2, Pf, Choice], play(Map1, Map2, Score2, NS, N_map1, U_map2, Pf, Choice), Z),
                     write(Z),
-                    nl, best_play(Z, Score2, Play, 0, ES), nl,
+                    nl, best_play(Z, Score2, Play, 0, ES), 
                     write('Maximum de gains par le coup:'), write(Play), write(' Score: '), write(ES), nl,
                     check_moves(M, Choice),
                     write(Choice), nl,
@@ -269,8 +269,8 @@ game_loop_pvp(Map1, Map2, Score1, Score2, 'joueur2', G):-
                     moves(Map2, R), check_moves_f_null(Map2, Map1, R, M),
                     write(M), nl,
                     bagof([NS, U_map1, N_map2, Pf, Choice], play(Map2, Map1, Score1, NS, U_map1, N_map2, Pf, Choice), Z),
-                    nl, best_play(Z, Score1, Play, 0, ES), nl,
-                    write('Maximum de gains par le coup:'), write(Play), write(ES), nl,
+                    nl, best_play(Z, Score1, Play, 0, ES),
+                    write('Maximum de gains par le coup:'), write(Play), write(' Score: '), write(ES), nl,
                     check_moves(M, Choice),
                     write(Choice), nl,
 
