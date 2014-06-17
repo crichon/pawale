@@ -70,8 +70,14 @@ sum([T|Q], S):- sum(Q, Res), S is Res + T.
 is_win(S, Turn):- S >= 25, nl, nl, write(Turn), write(' a gagné. \n Fin de la partie \n\n'), !.
 
 % current player can't play, the game ends, player 2 get all his seeds
-is_finnish([0,0,0,0,0,0], Map2, Score1, Score2, Turn):- write('Vous ne pouvez plus jouer, votre adversaire récupere ses graines.'),
-    sum(Map2, S), NS is Score2 + S, winner(Score1, NS, Turn).
+is_finnish([0,0,0,0,0,0], Map2, Score1, Score2, Turn):- 
+    write('Vous ne pouvez plus jouer, votre adversaire récupere ses graines.'),
+    sum(Map2, S), NS is Score2 + S, winner(Score1, NS, Turn), !.
+
+is_end(Map1, [0,0,0,0,0,0], Score1, _, Turn):- 
+    moves(Map1, R), check_moves_f_null(Map1, [0,0,0,0,0,0], R, M), M = [],
+    write('Champs ennemies vide, vous ne pouvez plus jouer, vous récuperez vos graines.'),
+    sum(Map1, S), NS is Score1 + S, winner(Score1, NS, Turn), !.
 
 winner(S1, S2, Turn):- S1 > S2, write(Turn), write(' a gagné, '), write(S1), write(' à '), write(S2), !.
 winner(S1, S2, _):- S1 = S2, write(' égalité, '), write(S1), write(' à '), write(S2).
@@ -238,20 +244,39 @@ launch(_):- write('Savez-vous lire ?').
 
 
 % factorize using turn ?
-game_loop_pvp(Map1, Map2, Score1, Score2, Turn, [T|Q]):-
+game_loop_pvp(_, _, _, Score2, Turn, _):-
     Turn = 'joueur1',
-    is_win(Score2, 'joueur2'), % plyer 2 just played, check if he has win
-    is_finnish(Map1, Map2, Score1, Score2, Turn), % check if i can play
-    % determine if the game is cycling, each node is composed of the (map(1->12), pf)
-    is_cycle(T, Q, Score1, Score2, Turn).
+    is_win(Score2, 'joueur2'), !. % plyer 2 just played, check if he has win
+
+game_loop_pvp(Map1, Map2, Score1, Score2, Turn, _):-
+    Turn = 'joueur1',
+    is_end(Map1, Map2, Score1, Score2, Turn).
+
+game_loop_pvp(Map1, Map2, Score1, Score2, Turn, _):-
+    Turn = 'joueur1',
+    is_finnish(Map1, Map2, Score1, Score2, Turn). % check if i can play
 
 
-game_loop_pvp(Map1, Map2, Score1, Score2, Turn, [T|Q]):-
+game_loop_pvp(_, _, Score1, Score2, Turn, [T|Q]):-
+    Turn = 'joueur1',
+    is_cycle(T, Q, Score1, Score2, Turn). % determine if the game is cycling, each node is composed of the (map(1->12), pf)
+
+
+game_loop_pvp(_, _, Score1, _, Turn, _):-
     Turn = 'joueur2',
-    is_win(Score1, 'joueur1'),
-    is_finnish(Map2, Map1, Score2, Score1, Turn),
-    is_cycle(T, Q, Score2, Score1, Turn).
+    is_win(Score1, 'joueur1').
 
+game_loop_pvp(Map1, Map2, Score1, Score2, Turn, _):-
+    Turn = 'joueur2',
+    is_end(Map2, Map1, Score2, Score1, Turn).
+
+game_loop_pvp(Map1, Map2, Score1, Score2, Turn, _):-
+    Turn = 'joueur2',
+    is_finnish(Map2, Map1, Score2, Score1, Turn).
+
+game_loop_pvp(_, _, Score1, Score2, Turn, [T|Q]):-
+    Turn = 'joueur2',
+    is_cycle(T, Q, Score2, Score1, Turn).
 
 % factoriser en inversant les listes ?
 game_loop_pvp(Map1, Map2, Score1, Score2, 'joueur1', G):-
@@ -301,20 +326,44 @@ game_loop_pvp(Map1, Map2, Score1, Score2, 'joueur2', G):-
 
 %------------------pvc----------------
 
-game_loop_pvc(Map1, Map2, Score1, Score2, Turn, [T|Q]):-
+
+
+% factorize using turn ?
+game_loop_pvc(_, _, _, Score2, Turn, _):-
     Turn = 'joueur1',
-    is_win(Score2, 'joueur2'), % plyer 2 just played, check if he has win
-    is_finnish(Map1, Map2, Score1, Score2, Turn), % check if i can play
-    % determine if the game is cycling, each node is composed of the (map(1->12), pf)
-    is_cycle(T, Q, Score1, Score2, Turn).
+    is_win(Score2, 'joueur2'), !. % plyer 2 just played, check if he has win
+
+game_loop_pvc(Map1, Map2, Score1, Score2, Turn, _):-
+    Turn = 'joueur1',
+    is_finnish(Map1, Map2, Score1, Score2, Turn). % check if i can play
+
+game_loop_pvc(Map1, Map2, Score1, Score2, Turn, _):-
+    Turn = 'joueur1',
+    is_end(Map1, Map2, Score1, Score2, Turn).
+
+    
+
+game_loop_pvc(_, _, Score1, Score2, Turn, [T|Q]):-
+    Turn = 'joueur1',
+    is_cycle(T, Q, Score1, Score2, Turn). % determine if the game is cycling, each node is composed of the (map(1->12), pf)
 
 
-game_loop_pvc(Map1, Map2, Score1, Score2, Turn, [T|Q]):-
+game_loop_pvc(_, _, Score1, _, Turn, _):-
     Turn = 'joueur2',
-    is_win(Score1, 'joueur1'),
-    is_finnish(Map2, Map1, Score2, Score1, Turn),
+    is_win(Score1, 'joueur1').
+
+game_loop_pvc(Map1, Map2, Score1, Score2, Turn, _):-
+    Turn = 'joueur2',
+    is_finnish(Map2, Map1, Score2, Score1, Turn).
+
+game_loop_pvc(_, _, Score1, Score2, Turn, [T|Q]):-
+    Turn = 'joueur2',
     is_cycle(T, Q, Score2, Score1, Turn).
 
+
+game_loop_pvc(Map1, Map2, Score1, Score2, Turn, _):-
+    Turn = 'joueur2',
+    is_end(Map2, Map1, Score2, Score1, Turn). 
 
 % factoriser en inversant les listes ?
 game_loop_pvc(Map1, Map2, Score1, Score2, 'joueur1', G):-
@@ -361,25 +410,46 @@ game_loop_pvc(Map1, Map2, Score1, Score2, 'joueur2', G):-
 %------------------pvc----------------
 
 
-game_loop_cvc(Map1, Map2, Score1, Score2, Turn, [T|Q]):-
+game_loop_cvc(_, _, _, Score2, Turn, _):-
     Turn = 'joueur1',
-    is_win(Score2, 'joueur2'), % plyer 2 just played, check if he has win
-    is_finnish(Map1, Map2, Score1, Score2, Turn), % check if i can play
-    % determine if the game is cycling, each node is composed of the (map(1->12), pf)
-    is_cycle(T, Q, Score1, Score2, Turn).
+    is_win(Score2, 'joueur2'), !. % plyer 2 just played, check if he has win
+
+game_loop_cvc(Map1, Map2, Score1, Score2, Turn, _):-
+    Turn = 'joueur1',
+    is_finnish(Map1, Map2, Score1, Score2, Turn). % check if i can play
 
 
-game_loop_cvc(Map1, Map2, Score1, Score2, Turn, [T|Q]):-
+game_loop_cvc(Map1, Map2, Score1, Score2, Turn, _):-
+    Turn = 'joueur1',
+    is_end(Map1, Map2, Score1, Score2, Turn). 
+    
+
+game_loop_cvc(_, _, Score1, Score2, Turn, [T|Q]):-
+    Turn = 'joueur1',
+    is_cycle(T, Q, Score1, Score2, Turn). % determine if the game is cycling, each node is composed of the (map(1->12), pf)
+
+
+game_loop_cvc(_, _, Score1, _, Turn, _):-
     Turn = 'joueur2',
-    is_win(Score1, 'joueur1'),
-    is_finnish(Map2, Map1, Score2, Score1, Turn),
+    is_win(Score1, 'joueur1').
+
+game_loop_cvc(Map1, Map2, Score1, Score2, Turn, _):-
+    Turn = 'joueur2',
+    is_finnish(Map2, Map1, Score2, Score1, Turn).
+
+game_loop_cvc(_, _, Score1, Score2, Turn, [T|Q]):-
+    Turn = 'joueur2',
     is_cycle(T, Q, Score2, Score1, Turn).
+
+game_loop_cvc(Map1, Map2, Score1, Score2, Turn, _):-
+    Turn = 'joueur2',
+    is_end(Map2, Map1, Score2, Score1, Turn). 
 
 
 % factoriser en inversant les listes ?
 game_loop_cvc(Map1, Map2, Score1, Score2, 'joueur1', G):-
                     draw_game(Map1, Map2, Score1, Score2, 'joueur1'),
-                    sleep(2),
+                    sleep(1),
                     bagof([NS, N_map1, U_map2, Pf, Choice], play(Map1, Map2, Score2, NS, N_map1, U_map2, Pf, Choice), Z),
                     nl, best_play(Z, Score2, Play, Score1, _, [], Score1),nl,
                     write('coup: '), write(Play),
@@ -396,7 +466,7 @@ game_loop_cvc(Map1, Map2, Score1, Score2, 'joueur1', G):-
 game_loop_cvc(Map1, Map2, Score1, Score2, 'joueur2', G):-
                     draw_game(Map1, Map2, Score1, Score2, 'joueur2'),
 
-                    sleep(2),
+                    sleep(1),
                     bagof([NS, U_map1, N_map2, Pf, Choice], play(Map2, Map1, Score2, NS, U_map1, N_map2, Pf, Choice), Z),
                     nl, best_play(Z, Score1, Play, Score2, _, [], Score2), nl,
                     write('coup: '), write(Play),
