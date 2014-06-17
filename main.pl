@@ -111,7 +111,6 @@ check_moves_f_null(_, _, [], []).
 check_moves(Map, Choice) :- repeat, check(Map, Choice), !.
 
 check(Map, Choice):- nl, read(Choice), element(Choice, Map).
-                    %repeat, nl, read(Choice), element(Choice, R),
 
 play(Map1, Map2, Score1, NS, N_map1, U_map2, Pf, Choice):-
                     moves(Map1, R), check_moves_f_null(Map1, Map2, R, M),
@@ -119,11 +118,6 @@ play(Map1, Map2, Score1, NS, N_map1, U_map2, Pf, Choice):-
                     launch_seed(Map1, Map2, Choice, N_map1, N_map2, Pf),
                     take(Pf, N_map2, Score1, NS, U_map2).
 
-
-%best_play([[Score, _, M2, _, Choice]| _], Score2, Play, _, ES, _, _):-
-        %M2 = [0, 0, 0, 0, 0, 0], Score > Score2, ES is Score,
-        %write('Vous pouvez gagné en jouant'), write(Choice), nl,
-        %Play is Choice, ! .
 
 best_play([[Score, _, _, _, Choice]| _], _, Play, _, ES, _, _):-
     Score > 25, ES is Score,
@@ -143,7 +137,6 @@ best_play([[_, _, _, _, Choice]| Q], Score2, Play, Tmp, ES, CL, Score1):-
     .
 
 best_play([], _, Play, Tmp, ES, CL, Score1):-
-    %write('wtf'), write(Tmp), write(Score2),
     Tmp = Score1,
     ES = 'pas de changement sur le socre', test_rand(CL, Rand), Play is Rand.
 
@@ -188,7 +181,6 @@ update(L, R, R, L).
 take(Pf, Map, Score, NS, N_map):- Pf = 0, take(12, Map, Score, NS, N_map), !.
 take(Pf, Map, Score, Ns, N_map):- Pf =< 6, Ns is Score, concat(Map, [], N_map), !.
 take(Pf, Map, Score, NS, N_map):-
-                    %write('wtf'), nl,
                     N is Pf - 6, split(Map, N, Take, Res),
                     reverse(Take, RTake),
                     update(RTake, Score, NS, NRTake),
@@ -198,10 +190,6 @@ take(Pf, Map, Score, NS, N_map):-
 
 % cancel the move as there  is no seed left on the opponement field 
 take(_, Map, Score, NS, N_map):-
-                    %N is Pf - 6, split(Map, N, Take, Res),
-                    %reverse(Take, RTake),
-                    %update(RTake, Score, _, NRTake),
-                    %reverse(NRTake, N_tmap2), concat(N_tmap2, Res, N_mmap),
                     NS is Score , N_map is Map,
                     write('Champs adverses affamés, prise annulée'), nl ,! .
 
