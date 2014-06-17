@@ -70,7 +70,7 @@ sum([T|Q], S):- sum(Q, Res), S is Res + T.
 is_win(S, Turn):- S >= 25, nl, nl, write(Turn), write(' a gagné. \n Fin de la partie \n\n'), !.
 
 % current player can't play, the game ends, player 2 get all his seeds
-is_finnish([0,0,0,0,0,0], Map2, Score1, Score2, Turn):- 
+is_finish([0,0,0,0,0,0], Map2, Score1, Score2, Turn):- 
     write('Vous ne pouvez plus jouer, votre adversaire récupere ses graines.'),
     sum(Map2, S), NS is Score2 + S, winner(Score1, NS, Turn), !.
 
@@ -120,10 +120,10 @@ play(Map1, Map2, Score1, NS, N_map1, U_map2, Pf, Choice):-
                     take(Pf, N_map2, Score1, NS, U_map2).
 
 
-best_play([[Score, _, M2, _, Choice]| _], Score2, Play, _, ES, _, _):-
-        M2 = [0, 0, 0, 0, 0, 0], Score > Score2, ES is Score,
-        write('Vous pouvez gagné en jouant'), write(Choice), nl,
-        Play is Choice, ! .
+%best_play([[Score, _, M2, _, Choice]| _], Score2, Play, _, ES, _, _):-
+        %M2 = [0, 0, 0, 0, 0, 0], Score > Score2, ES is Score,
+        %write('Vous pouvez gagné en jouant'), write(Choice), nl,
+        %Play is Choice, ! .
 
 best_play([[Score, _, _, _, Choice]| _], _, Play, _, ES, _, _):-
     Score > 25, ES is Score,
@@ -133,26 +133,26 @@ best_play([[Score, _, _, _, Choice]| _], _, Play, _, ES, _, _):-
 best_play([[Score, _, _, _, Choice]| Q], Score2, Play, Tmp, ES, CL, Score1):-
     %write(Play),
     Score > Tmp, Ttmp is Score, Play is Choice,
-    write(Score), write(' '), write(Choice), nl, write(' Play is: '), write(Play), write('/'), write(Ttmp), nl,
+    %write(Score), write(' '), write(Choice), nl, write(' Play is: '), write(Play), write('/'), write(Ttmp), nl,
     %write('coup'), write(Play), nl,
     best_play(Q, Score2, Play, Ttmp, ES, [Play|CL], Score1).
 
-best_play([[Score, _, _, _, Choice]| Q], Score2, Play, Tmp, ES, CL, Score1):-
-    write(Score), write(' '), write(Choice), write(' Play is: '), write(Play),nl,
+best_play([[_, _, _, _, Choice]| Q], Score2, Play, Tmp, ES, CL, Score1):-
+    %write(Score), write(' '), write(Choice), write(' Play is: '), write(Play),nl,
     best_play(Q, Score2, Play, Tmp, ES, [Choice|CL], Score1)
     .
 
-best_play([], Score2, Play, Tmp, ES, CL, Score1):-
-    write('wtf'), write(Tmp), write(Score2),
+best_play([], _, Play, Tmp, ES, CL, Score1):-
+    %write('wtf'), write(Tmp), write(Score2),
     Tmp = Score1,
     ES = 'pas de changement sur le socre', test_rand(CL, Rand), Play is Rand.
 
 best_play([], _, _, Tmp, ES, _, _):- 
     ES is Tmp. 
 
-test_rand(CL, Rand):- repeat, write('fuck'), is_ok(CL, Rand). 
+test_rand(CL, Rand):- repeat, is_ok(CL, Rand). 
 
-is_ok(CL, Rand):- Play is random(6) + 1, write(Play), element(Play, CL), Rand is Play.
+is_ok(CL, Rand):- Play is random(6) + 1, element(Play, CL), Rand is Play.
 
 
 % ------------------------------------------------------------------------------
@@ -196,13 +196,14 @@ take(Pf, Map, Score, NS, N_map):-
                     % check if the new map is not null
                     diff(N_map, [0,0,0,0,0,0]), !.
 
-take(Pf, Map, Score, NS, N_map):-
-                    N is Pf - 6, split(Map, N, Take, Res),
-                    reverse(Take, RTake),
-                    update(RTake, Score, _, NRTake),
-                    reverse(NRTake, N_tmap2), concat(N_tmap2, Res, N_map),
-                    NS is Score ,
-                    write('Champs adverses vidés, vous ne gagnez pas de points'), nl.
+% cancel the move as there  is no seed left on the opponement field 
+take(_, Map, Score, NS, N_map):-
+                    %N is Pf - 6, split(Map, N, Take, Res),
+                    %reverse(Take, RTake),
+                    %update(RTake, Score, _, NRTake),
+                    %reverse(NRTake, N_tmap2), concat(N_tmap2, Res, N_mmap),
+                    NS is Score , N_map is Map,
+                    write('Champs adverses affamés, prise annulée'), nl ,! .
 
 
 % ------------------------------------------------------------------------------
@@ -254,7 +255,7 @@ game_loop_pvp(Map1, Map2, Score1, Score2, Turn, _):-
 
 game_loop_pvp(Map1, Map2, Score1, Score2, Turn, _):-
     Turn = 'joueur1',
-    is_finnish(Map1, Map2, Score1, Score2, Turn). % check if i can play
+    is_finish(Map1, Map2, Score1, Score2, Turn). % check if i can play
 
 
 game_loop_pvp(_, _, Score1, Score2, Turn, [T|Q]):-
@@ -272,7 +273,7 @@ game_loop_pvp(Map1, Map2, Score1, Score2, Turn, _):-
 
 game_loop_pvp(Map1, Map2, Score1, Score2, Turn, _):-
     Turn = 'joueur2',
-    is_finnish(Map2, Map1, Score2, Score1, Turn).
+    is_finish(Map2, Map1, Score2, Score1, Turn).
 
 game_loop_pvp(_, _, Score1, Score2, Turn, [T|Q]):-
     Turn = 'joueur2',
@@ -335,7 +336,7 @@ game_loop_pvc(_, _, _, Score2, Turn, _):-
 
 game_loop_pvc(Map1, Map2, Score1, Score2, Turn, _):-
     Turn = 'joueur1',
-    is_finnish(Map1, Map2, Score1, Score2, Turn). % check if i can play
+    is_finish(Map1, Map2, Score1, Score2, Turn). % check if i can play
 
 game_loop_pvc(Map1, Map2, Score1, Score2, Turn, _):-
     Turn = 'joueur1',
@@ -354,7 +355,7 @@ game_loop_pvc(_, _, Score1, _, Turn, _):-
 
 game_loop_pvc(Map1, Map2, Score1, Score2, Turn, _):-
     Turn = 'joueur2',
-    is_finnish(Map2, Map1, Score2, Score1, Turn).
+    is_finish(Map2, Map1, Score2, Score1, Turn).
 
 game_loop_pvc(_, _, Score1, Score2, Turn, [T|Q]):-
     Turn = 'joueur2',
@@ -416,7 +417,7 @@ game_loop_cvc(_, _, _, Score2, Turn, _):-
 
 game_loop_cvc(Map1, Map2, Score1, Score2, Turn, _):-
     Turn = 'joueur1',
-    is_finnish(Map1, Map2, Score1, Score2, Turn). % check if i can play
+    is_finish(Map1, Map2, Score1, Score2, Turn). % check if i can play
 
 
 game_loop_cvc(Map1, Map2, Score1, Score2, Turn, _):-
@@ -435,7 +436,7 @@ game_loop_cvc(_, _, Score1, _, Turn, _):-
 
 game_loop_cvc(Map1, Map2, Score1, Score2, Turn, _):-
     Turn = 'joueur2',
-    is_finnish(Map2, Map1, Score2, Score1, Turn).
+    is_finish(Map2, Map1, Score2, Score1, Turn).
 
 game_loop_cvc(_, _, Score1, Score2, Turn, [T|Q]):-
     Turn = 'joueur2',
