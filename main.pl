@@ -76,7 +76,7 @@ is_finnish([0,0,0,0,0,0], Map2, Score1, Score2, Turn):-
 
 is_end(Map1, [0,0,0,0,0,0], Score1, _, Turn):- 
     moves(Map1, R), check_moves_f_null(Map1, [0,0,0,0,0,0], R, M), M = [],
-    write('Champs ennemies vide, vous ne pouvez plus jouer, vous récuperez vos graines.'),
+    write('Champs adverses vides, vous ne pouvez plus jouer, vous récuperez vos graines.'),
     sum(Map1, S), NS is Score1 + S, winner(Score1, NS, Turn), !.
 
 winner(S1, S2, Turn):- S1 > S2, write(Turn), write(' a gagné, '), write(S1), write(' à '), write(S2), !.
