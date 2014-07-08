@@ -1,6 +1,8 @@
-Projet de IA02 en prolog. Implémente un jeu d'awale dans l'interpréteur.
+Projet de IA02 en prolog.
+=========================
+Implémente un jeu d'awale dans l'interpréteur.
 
-Lancer le jeu via launch_game.
+Lancer le jeu via *launch_game*.
 
 Permet de jouer:
 
